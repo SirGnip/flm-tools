@@ -13,6 +13,11 @@ def _cmd_strings(args):
         print(s)
 
 
+def _cmd_parent(args):
+    for s in sorted(files.find_parents(args.file)):
+        print(s)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="flm",
@@ -33,6 +38,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filtering level: 1=raw strings, 2=interesting paths, 3=cleaned (default: 1)",
     )
     strings_parser.set_defaults(func=_cmd_strings)
+
+    parent_parser = subparsers.add_parser(
+        "parent",
+        help="List the files that reference the given file",
+    )
+    parent_parser.add_argument("file", help="Path to the file (relative, absolute, or bare filename)")
+    parent_parser.set_defaults(func=_cmd_parent)
 
     return parser
 

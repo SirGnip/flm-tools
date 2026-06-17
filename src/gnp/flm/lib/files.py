@@ -69,6 +69,44 @@ def find_strings_lvl3(filepath: str | Path):
     return sorted(set(strings))  # uniqueify and sort
 
 
+CATEGORY_DIRS = ["My Drumsets", "My Instruments", "My Presets", "My Racks", "My Songs"]
+
+
+def _find_data_root(filepath: Path) -> Path | None:
+    """Walk up from filepath until a directory containing both "My Songs" and
+    "My Recordings" subdirs is found. Return that directory, or None."""
+    for parent in filepath.parents:
+        if (parent / "My Songs").is_dir() and (parent / "My Recordings").is_dir():
+            return parent
+    return None
+
+
+def find_parents(filepath: str | Path) -> set[str]:
+    """Return the set of files that reference the given file.
+
+    Locates the data_root by walking up from filepath, enumerates the files
+    (one level deep) in the category directories, and returns any whose
+    extracted strings reference filepath's name.
+    """
+    filepath = Path(filepath).resolve()
+    data_root = _find_data_root(filepath)
+    if data_root is None:
+        raise Exception(f"Unable to find FL Studio Mobile data root at or above {filepath}")
+
+    target = filepath.name
+    parents = set()
+    for category in CATEGORY_DIRS:
+        category_dir = data_root / category
+        if not category_dir.is_dir():
+            raise Exception("The expected subdirectory ({category}) does not exist")
+        for candidate in category_dir.rglob("*"):
+            if not candidate.is_file() or candidate == filepath:
+                continue
+            if any(target in s for s in find_strings_lvl3(candidate)):
+                parents.add(str(candidate))
+    return parents
+
+
 if __name__ == "__main__":
     strings = find_strings_lvl3(BASE / "My Songs/song.flm")
     for s in sorted(set(strings)):
