@@ -33,13 +33,14 @@ def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
 
 def _get_interesting(strings):
     strings = [s for s in strings if "/" in s or "\\" in s]
-    strings = [s for s in strings if not s.startswith("Resources")]  # strip ^Resources as these paths are duplicated elsewhere
-    strings = [s for s in strings if not s.startswith("/storage/emulated") and not s.startswith("C:\\")]  # these are duplicated elsewhere
+    # strings = [s for s in strings if not s.startswith("Resources")]  # strip ^Resources as these paths are often duplicated elsewhere
+    # strings = [s for s in strings if not s.startswith("/storage/emulated") and not s.startswith("C:\\")]  # these are often duplicated elsewhere
     return strings
 
 
 def _has_interesting_extension(s) -> str | None:
-    extensions = [".wav", ".dwp"]
+    """These are extensions that identify interesting strings inside raw binary data"""
+    extensions = [".wav", ".dwp", ".flmpst", ".flgsynth", ".flm", ".flms", ".fst", ".tmpl", ".mp3", ".flac"]
     lower = s.lower()
     for ext in extensions:
         idx = lower.find(ext)
