@@ -18,6 +18,11 @@ def _cmd_parent(args):
         print(s)
 
 
+def _cmd_orphan(args):
+    for s in sorted(files.find_orphans(args.directory)):
+        print(s)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="flm",
@@ -45,6 +50,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parent_parser.add_argument("file", help="Path to the file (relative, absolute, or bare filename)")
     parent_parser.set_defaults(func=_cmd_parent)
+
+    orphan_parser = subparsers.add_parser(
+        "orphan",
+        help="List the files in a directory that no other file references",
+    )
+    orphan_parser.add_argument("directory", help="Path to the directory (relative, absolute, or bare path)")
+    orphan_parser.set_defaults(func=_cmd_orphan)
 
     return parser
 

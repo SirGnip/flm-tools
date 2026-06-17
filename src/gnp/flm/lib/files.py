@@ -107,6 +107,49 @@ def find_parents(filepath: str | Path) -> set[str]:
     return parents
 
 
+def _build_reference_index(data_root: Path) -> dict[Path, list[str]]:
+    """Map each file in the category directories to the reference strings it
+    contains. Built once so orphan detection avoids re-parsing files."""
+    index = {}
+    for category in CATEGORY_DIRS:
+        category_dir = data_root / category
+        if not category_dir.is_dir():
+            raise Exception(f"The expected subdirectory ({category}) does not exist")
+        for candidate in category_dir.rglob("*"):
+            if candidate.is_file():
+                index[candidate] = find_strings_lvl3(candidate)
+    return index
+
+
+def find_orphans(directory: str | Path) -> set[str]:
+    """Return the files in the given directory that no other file references.
+
+    Builds a parent -> reference-strings index once, then reports each file in
+    the directory that no parent (other than itself) references by name.
+    """
+    directory = Path(directory).resolve()
+    data_root = _find_data_root(directory)
+    if data_root is None:
+        raise Exception(f"Unable to find FL Studio Mobile data root at or above {directory}")
+
+    index = _build_reference_index(data_root)
+
+    orphans = set()
+    for f in directory.rglob("*"):
+        if not f.is_file():
+            continue
+        target = f.name
+        has_parent = any(
+            target in s
+            for parent, strings in index.items()
+            if parent != f
+            for s in strings
+        )
+        if not has_parent:
+            orphans.add(str(f))
+    return orphans
+
+
 if __name__ == "__main__":
     strings = find_strings_lvl3(BASE / "My Songs/song.flm")
     for s in sorted(set(strings)):
