@@ -12,6 +12,7 @@ def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
     Returns:
     List of ASCII strings found in the file.
     """
+    filepath = Path(filepath).resolve()
     results = []
     current = []
 
