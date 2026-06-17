@@ -1,5 +1,5 @@
 from pathlib import Path
-BASE = Path(r'c:\Users\scott\Documents\Image-Line\FL Studio Mobile')
+BASE = Path(r"c:\Users\scott\Documents\Image-Line\FL Studio Mobile")
 
 def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
     """
@@ -32,14 +32,14 @@ def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
     return results
 
 def _get_interesting(strings):
-    strings = [s for s in strings if '/' in s]
-    strings = [s for s in strings if not s.startswith('Resources')]  # strip ^Resources as these paths are duplicated elsewhere
-    strings = [s for s in strings if not s.startswith('/storage/emulated')]
+    strings = [s for s in strings if "/" in s or "\\" in s]
+    strings = [s for s in strings if not s.startswith("Resources")]  # strip ^Resources as these paths are duplicated elsewhere
+    strings = [s for s in strings if not s.startswith("/storage/emulated") and not s.startswith("C:\\")]  # these are duplicated elsewhere
     return strings
 
 
 def _has_interesting_extension(s) -> str | None:
-    extensions = ['.wav', '.dwp']
+    extensions = [".wav", ".dwp"]
     lower = s.lower()
     for ext in extensions:
         idx = lower.find(ext)
@@ -68,8 +68,8 @@ def find_strings_lvl3(filepath: str | Path):
     return sorted(set(strings))  # uniqueify and sort
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     strings = find_strings_lvl3(BASE / "My Songs/song.flm")
     for s in sorted(set(strings)):
         print(s)
-    print('count', len(strings))
+    print("count", len(strings))
