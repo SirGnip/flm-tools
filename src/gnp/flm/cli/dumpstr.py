@@ -1,10 +1,5 @@
-import sys
 from pathlib import Path
 from gnp.flm.lib import files
-
-
-def main():
-    find_strs(sys.argv[1])
 
 
 def find_strs(fname: str):
