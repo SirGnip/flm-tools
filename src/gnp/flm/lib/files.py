@@ -1,5 +1,5 @@
 from pathlib import Path
-BASE = Path(r"c:\Users\scott\Documents\Image-Line\FL Studio Mobile")
+BASE = Path(r"c:\dir\Documents\Image-Line\FL Studio Mobile")
 
 USER_DATA_DIRS = {
     "My Chord Sets",

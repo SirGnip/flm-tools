@@ -1,5 +1,7 @@
 import argparse
+import sys
 
+from gnp.flm.cli.win import explorer
 from gnp.flm.lib import files
 
 
@@ -21,6 +23,14 @@ def _cmd_parent(args):
 def _cmd_orphan(args):
     for s in sorted(files.find_orphans(args.directory)):
         print(s)
+
+
+def _cmd_openwin(args):
+    if args.stdin:
+        paths = [line.strip() for line in sys.stdin if line.strip()]
+    else:
+        paths = args.files
+    explorer.open_in_explorer(paths, max_windows=args.max_windows)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -57,6 +67,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     orphan_parser.add_argument("directory", help="Path to the directory (relative, absolute, or bare path)")
     orphan_parser.set_defaults(func=_cmd_orphan)
+
+    openwin_parser = subparsers.add_parser(
+        "openwin",
+        help="Open the given files/directories selected in Windows Explorer",
+    )
+    openwin_parser.add_argument(
+        "files",
+        nargs="*",
+        help="Paths to open (file or directory). Ignored when --stdin is given.",
+    )
+    openwin_parser.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read the list of paths from stdin (one per line) instead of the command line",
+    )
+    openwin_parser.add_argument(
+        "--max-windows",
+        type=int,
+        default=15,
+        help="Maximum number of Explorer windows to open before erroring (default: 10)",
+    )
+    openwin_parser.set_defaults(func=_cmd_openwin)
 
     return parser
 
