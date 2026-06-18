@@ -115,10 +115,13 @@ CATEGORY_DIRS = ["My Drumsets", "My Instruments", "My Presets", "My Racks", "My 
 
 def _find_data_root(filepath: Path) -> Path | None:
     """Walk up from filepath until a directory containing both "My Songs" and
-    "My Recordings" subdirs is found. Return that directory, or None."""
-    for parent in filepath.parents:
-        if (parent / "My Songs").is_dir() and (parent / "My Recordings").is_dir():
-            return parent
+    "My Recordings" subdirs is found. Return that directory, or None.
+
+    filepath itself is checked first, so a directory that is already the data
+    root is recognized."""
+    for candidate in (filepath, *filepath.parents):
+        if (candidate / "My Songs").is_dir() and (candidate / "My Recordings").is_dir():
+            return candidate
     return None
 
 
@@ -227,6 +230,24 @@ def find_orphans(directory: str | Path) -> set[str]:
         if not has_parent:
             orphans.add(str(f))
     return orphans
+
+
+def find_empty(directory: str | Path) -> set[str]:
+    """Return the zero-length files found under the FL Studio Mobile data root.
+
+    Walks up from the given directory to locate the data root, then enumerates
+    all files beneath it and reports those that are zero bytes.
+    """
+    directory = Path(directory).resolve()
+    data_root = _find_data_root(directory)
+    if data_root is None:
+        raise Exception(f"Unable to find FL Studio Mobile data root at or above {directory}")
+
+    empties = set()
+    for f in data_root.rglob("*"):
+        if f.is_file() and f.stat().st_size == 0:
+            empties.add(str(f))
+    return empties
 
 
 if __name__ == "__main__":

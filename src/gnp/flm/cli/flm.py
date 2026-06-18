@@ -25,6 +25,11 @@ def _cmd_orphan(args):
         print(s)
 
 
+def _cmd_empty(args):
+    for s in sorted(files.find_empty(".")):
+        print(s)
+
+
 def _cmd_openwin(args):
     if args.files == ["-"]:
         paths = [line.strip() for line in sys.stdin if line.strip()]
@@ -67,6 +72,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     orphan_parser.add_argument("directory", help="Path to the directory (relative, absolute, or bare path)")
     orphan_parser.set_defaults(func=_cmd_orphan)
+
+    empty_parser = subparsers.add_parser(
+        "empty",
+        help="List zero-length files under the data root (found by walking up from the current directory)",
+    )
+    empty_parser.set_defaults(func=_cmd_empty)
 
     openwin_parser = subparsers.add_parser(
         "openwin",
