@@ -1,6 +1,46 @@
 from pathlib import Path
 BASE = Path(r"c:\Users\scott\Documents\Image-Line\FL Studio Mobile")
 
+USER_DATA_DIRS = {
+    "My Chord Sets",
+    "My Drumsets",
+    "My Instruments",
+    "My MIDI",
+    "My Presets",
+    "My Racks",
+    "My Recordings",
+    "My Samples",
+    "My Songs",
+    "My SoundFonts",
+    "My Tracks",
+    "Online Content"
+}
+
+FACTORY_DATA_BASE = "FL Studio Mobile Factory Data"
+
+FACTORY_DATA_DIRS = {
+    "3xOsc Shapes",
+    "Chord Sets",
+    "DirectWave Samples",
+    "DirectWave Samples EXP",
+    "DLL",
+    "Drum Samples",
+    "Drum Templates",
+    "Effect Presets",
+    "Fonts",
+    "GMSynthWaveshapes",
+    "Keyboard Shortcuts",
+    "Loop Samples",
+    "MelodyGenerator",
+    "New Song Templates",
+    "Rack Presets",
+    "Songs",
+    "SoundFonts",
+    "Synth Presets2"
+}
+
+
+
 def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
     """
     Find all ASCII strings in a binary file, similar to the Unix `strings` command.
@@ -30,6 +70,7 @@ def find_strings(filepath: str | Path, min_length: int = 4) -> list[str]:
         results.append("".join(current))
 
     return results
+
 
 def _get_interesting(strings):
     strings = [s for s in strings if "/" in s or "\\" in s]
@@ -107,9 +148,47 @@ def find_parents(filepath: str | Path) -> set[str]:
     return parents
 
 
+class UnrecognizedReferencePath(Exception):
+    """Raised when a reference string is not rooted at a known USER_DATA_DIRS or
+    FACTORY_DATA_BASE/FACTORY_DATA_DIRS path. Kept as a distinct exception so the
+    codepath stays open for handling this data differently later."""
+
+
+def _normalize_separators(s: str) -> str:
+    """Normalize Windows backslashes to Linux forward slashes."""
+    return s.replace("\\", "/")
+
+
+def _strip_to_data_dir(path: str) -> str | None:
+    """Given a forward-slash path, return the relative path starting at the first
+    USER_DATA_DIRS or FACTORY_DATA_DIRS component (keeping that directory and
+    everything under it), or None if no such component is present."""
+    parts = path.split("/")
+    for i, part in enumerate(parts):
+        if part in USER_DATA_DIRS or part in FACTORY_DATA_DIRS:
+            return "/".join(parts[i:])
+    return None
+
+
+def _parse_reference_path(s: str) -> str:
+    """Parse a reference string (assumed to be a path) into a relative path rooted
+    at a USER_DATA_DIRS or FACTORY_DATA_DIRS directory.
+
+    Normalizes separators, then strips the leading portion of the path. Raises
+    UnrecognizedReferencePath if the string matches neither pattern."""
+    result = _strip_to_data_dir(_normalize_separators(s))
+    if result is None:
+        return s
+        # raise UnrecognizedReferencePath(s)
+    return result
+
+
 def _build_reference_index(data_root: Path) -> dict[Path, list[str]]:
-    """Map each file in the category directories to the reference strings it
-    contains. Built once so orphan detection avoids re-parsing files."""
+    """Map each file in the category directories to the reference paths it
+    contains. Built once so orphan detection avoids re-parsing files.
+
+    The raw strings extracted from each file are parsed into relative paths
+    rooted at a USER_DATA_DIRS or FACTORY_DATA_DIRS directory."""
     index = {}
     for category in CATEGORY_DIRS:
         category_dir = data_root / category
@@ -117,7 +196,7 @@ def _build_reference_index(data_root: Path) -> dict[Path, list[str]]:
             raise Exception(f"The expected subdirectory ({category}) does not exist")
         for candidate in category_dir.rglob("*"):
             if candidate.is_file():
-                index[candidate] = find_strings_lvl3(candidate)
+                index[candidate] = sorted(set([_parse_reference_path(s) for s in find_strings_lvl3(candidate)]))
     return index
 
 
@@ -138,7 +217,9 @@ def find_orphans(directory: str | Path) -> set[str]:
     for f in directory.rglob("*"):
         if not f.is_file():
             continue
-        target = f.name
+        # Apply the same relative-pathname processing to the target so the full
+        # rooted path can be compared, not just the bare filename.
+        target = _parse_reference_path(str(f.relative_to(data_root)))
         has_parent = any(
             target in s
             for parent, strings in index.items()
