@@ -125,26 +125,24 @@ def _find_data_root(filepath: Path) -> Path | None:
 def find_parents(filepath: str | Path) -> set[str]:
     """Return the set of files that reference the given file.
 
-    Locates the data_root by walking up from filepath, enumerates the files
-    (one level deep) in the category directories, and returns any whose
-    extracted strings reference filepath's name.
+    Locates the data_root by walking up from filepath, builds the reference
+    index, and returns any file (other than filepath itself) whose extracted
+    strings reference filepath's rooted relative path.
     """
     filepath = Path(filepath).resolve()
     data_root = _find_data_root(filepath)
     if data_root is None:
         raise Exception(f"Unable to find FL Studio Mobile data root at or above {filepath}")
 
-    target = filepath.name
-    parents = set()
-    for category in CATEGORY_DIRS:
-        category_dir = data_root / category
-        if not category_dir.is_dir():
-            raise Exception("The expected subdirectory ({category}) does not exist")
-        for candidate in category_dir.rglob("*"):
-            if not candidate.is_file() or candidate == filepath:
-                continue
-            if any(target in s for s in find_strings_lvl3(candidate)):
-                parents.add(str(candidate))
+    index = _build_reference_index(data_root)
+
+    target = _parse_reference_path(str(filepath.relative_to(data_root)))
+    parents = {
+        str(parent)
+        for parent, strings in index.items()
+        if parent != filepath
+        if any(target in s for s in strings)
+    }
     return parents
 
 
