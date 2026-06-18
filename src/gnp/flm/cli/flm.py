@@ -26,7 +26,7 @@ def _cmd_orphan(args):
 
 
 def _cmd_openwin(args):
-    if args.stdin:
+    if args.files == ["-"]:
         paths = [line.strip() for line in sys.stdin if line.strip()]
     else:
         paths = args.files
@@ -75,12 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     openwin_parser.add_argument(
         "files",
         nargs="*",
-        help="Paths to open (file or directory). Ignored when --stdin is given.",
-    )
-    openwin_parser.add_argument(
-        "--stdin",
-        action="store_true",
-        help="Read the list of paths from stdin (one per line) instead of the command line",
+        help="Paths to open (file or directory). Pass a single '-' to read paths from stdin (one per line).",
     )
     openwin_parser.add_argument(
         "--max-windows",
